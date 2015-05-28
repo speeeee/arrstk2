@@ -10,7 +10,8 @@
 (define (ret-pop stk) (reverse (cdr (reverse stk))))
 
 (define funs* (list (list "+" (list "#Int" "#Int") (list "#Int"))
-                    (list "(define)")))
+                    (list "(define)" (list "#In" "#Out" "#Sym") '()) (list "(lst)")))
+;(define macros* (list (list ":IN") (list ":OUT")))
 
 (define (write-spec ls) 
   (if (list? ls) (begin (display "(") (map write-spec ls) (display ")"))
@@ -44,7 +45,8 @@
 (define (fexists? s fns) (member s (map car fns)))
 (define (get-f s fns) (findf (λ (x) (equal? (car x) s)) fns))
 (define (call-fun f stk)
-  (if (equal? (car f) "(define)") (list "(define)" stk)
+  (if (equal? (car f) "(lst)") (let ([l (λ (x) (equal? (v-type (car (reverse stk))) (v-type x)))])
+                                 (push (reverse (dropf (reverse stk) l)) (v (reverse (takef (reverse stk) l)) "#List")))
   (let ([sub (list (pop (ret-pop stk)) (pop stk))])
     (if (not (equal? (map v-type sub) (second f))) (displayln "ERROR: type mismatch.")
         (begin ; (do the C stuff)
