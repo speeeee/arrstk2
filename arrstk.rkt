@@ -45,12 +45,15 @@
 (define (fexists? s fns) (member s (map car fns)))
 (define (get-f s fns) (findf (λ (x) (equal? (car x) s)) fns))
 (define (call-fun f stk)
-  (if (equal? (car f) "(lst)") (let ([l (λ (x) (equal? (v-type (car (reverse stk))) (v-type x)))])
-                                 (push (reverse (dropf (reverse stk) l)) (v (reverse (takef (reverse stk) l)) "#List")))
+  (cond [(equal? (car f) "(lst)") (let ([l (λ (x) (equal? (v-type (car (reverse stk))) (v-type x)))])
+                                    (push (reverse (dropf (reverse stk) l)) (v (reverse (takef (reverse stk) l)) "#List")))]
+        [(equal? (car f) "(define)") (let ([x (pop stk)] [y (pop (ret-pop stk))] [z (pop (ret-pop (ret-pop stk)))])
+                                       (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
+        [else 
   (let ([sub #;(list (pop (ret-pop stk)) (pop stk)) (drop stk (- (length stk) (length (second f))))])
     (if (not (equal? (map v-type sub) (second f))) (begin (displayln (map v-type sub)) (displayln "ERROR: type mismatch."))
         (begin ; (do the C stuff)
-               (append (take stk (- (length stk) (length sub))) (map (λ (x) (v (list (car f) sub) x)) (third f))))))))
+               (append (take stk (- (length stk) (length sub))) (map (λ (x) (v (list (car f) sub) x)) (third f))))))]))
 
 (define (push~ stk s)
   (cond [(equal? (v-type s) "#Sym") (if (fexists? (v-val s) funs*) (call-fun (get-f (v-val s) funs*) stk)
@@ -62,6 +65,7 @@
 
 (define (main)
   (write-spec (process (map lex (string-split-spec (read-line))) '()))
+  (displayln funs*)
   (main))
 
 (main)
