@@ -39,9 +39,13 @@
 
 (define (strcar s) (car (string->list s)))
 
-#;(define (out-c stk f)
-  (cond [(list? stk) (map (λ (x) (out-c x f)) stk)]
-        [()]))
+(define (out-c stk f) ;(displayln stk)
+  (cond [(list? stk) (begin (map (λ (x) (begin (out-c x f) (fprintf f ";~n"))) stk))]
+        [(fn? stk) (begin (fprintf f "~a(" (fn-name stk))
+                          (map (λ (x) (begin (out-c x f) (fprintf f ","))) (ret-pop (fn-ins stk))) (out-c (pop (fn-ins stk)) f)
+                          (fprintf f ")"))]
+        [(v? stk) (out-c (v-val stk) f)]
+        [else (fprintf f "~a" stk)]))
         
 
 (define (lex l)
@@ -73,8 +77,9 @@
   (if (empty? stk) n (process (cdr stk) (push~ n (car stk)))))
 
 (define (main)
-  (write-spec (process (map lex (string-split-spec (read-line))) '()))
-  (displayln funs*)
-  (main))
+  (let ([e (process (map lex (string-split-spec (read-line))) '())])
+    (write-spec e) (out-c e (current-output-port))
+    (displayln funs*)
+    (main)))
 
 (main)
