@@ -6,13 +6,14 @@
 
 (struct v (val type))
 (struct fn (name ins))
+(define (v=? va vb) (and (equal? (v-val va) (v-val vb)) (equal? (v-type va) (v-type vb))))
 (define (push stk elt) (append stk (list elt)))
 (define (pop stk) (car (reverse stk)))
 (define (ret-pop stk) (reverse (cdr (reverse stk))))
 
 (define funs* (list (list "+" (list "#Int" "#Int") (list "#Int"))
                     (list "(define)" (list "#Set" "#List" "#List" "#Sym") '()) (list "(lst)")
-                    (list ";")))
+                    #;(list ";")))
 ;(define macros* (list (list ":IN") (list ":OUT")))
 
 (define (write-spec ls) 
@@ -61,7 +62,7 @@
                                     (push (reverse (dropf (reverse stk) l)) (v (reverse (takef (reverse stk) l)) "#List")))]
         [(equal? (car f) "(define)") (let ([x (pop stk)] [y (pop (ret-pop stk))] [z (pop (ret-pop (ret-pop stk)))])
                                        (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
-        [(equal? (car f) ";") (list (v stk "#Set"))]
+        ;[(equal? (car f) ";") (list (v stk "#Set"))]
         [else 
   (let ([sub #;(list (pop (ret-pop stk)) (pop stk)) (drop stk (- (length stk) (length (second f))))])
     (if (not (equal? (map v-type sub) (second f))) (begin (displayln (map v-type sub)) (displayln "ERROR: type mismatch."))
@@ -73,11 +74,16 @@
                                         (push stk s))]
         [else (push stk s)]))
 
+(define (check-semi stk) (check-semi+ stk '()))
+(define (check-semi+ stk n)
+  (if (empty? stk) n (cond [(v=? (car stk) (v ";" "#Sym")) (check-semi+ (cdr stk) (push '() (v n "#Expr")))]
+                           [else (check-semi+ (cdr stk) (push n (car stk)))])))
+
 (define (process stk n)
   (if (empty? stk) n (process (cdr stk) (push~ n (car stk)))))
 
 (define (main)
-  (let ([e (process (map lex (string-split-spec (read-line))) '())])
+  (let ([e (process (check-semi (map lex (string-split-spec (read-line)))) '())])
     (write-spec e) (out-c e (current-output-port))
     (displayln funs*)
     (main)))
