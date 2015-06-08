@@ -6,6 +6,7 @@
 
 (struct v (val type))
 (struct fn (name ins))
+(struct m (mode stx out))
 (define (v=? va vb) (and (equal? (v-val va) (v-val vb)) (equal? (v-type va) (v-type vb))))
 (define (push stk elt) (append stk (list elt)))
 (define (pop stk) (car (reverse stk)))
@@ -14,7 +15,14 @@
 (define funs* (list (list "+" (list "#Int" "#Int") (list "#Int"))
                     (list "(define)" (list "#Set" "#List" "#List" "#Sym") '()) (list "(lst)")
                     #;(list ";")))
-;(define macros* (list (list ":IN") (list ":OUT")))
+
+(define macros* (list (m ":" (list "name" "ea" "eb" "def") 
+                         (fn "define" (list (v "name" "#Sym") (v "ea" "#List") (v "eb" "#List") (v "def" "#Expr")) "#Void"))))
+; very rough sketch on how macros could work:
+; they work by having a "mode" symbol, or 'trigger'.  The mode essentially
+; determines how many inputs it will wait for before activating.
+; there will be a way to break from the macro call to parse using a different mode.
+; the words, '{' and '}', will be used to break.
 
 (define (write-spec ls) 
   (if (list? ls) (begin (display "(") (map write-spec ls) (display ")"))
