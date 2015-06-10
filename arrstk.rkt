@@ -14,7 +14,8 @@
 
 (define funs* (list (list "+" (list "#Int" "#Int") (list "#Int"))
                     (list "(define)" (list "#Expr" "#List" "#List" "#Sym") '()) (list "(lst)")
-                    (list "(rule)" (list "#Expr" "#List" "#Sym") '())
+                    (list "(rule)") #| #Expr #List |# 
+                    (list "(mode)") #| #Sym |#
                     #;(list ";")))
 
 ;(define macros* (list (m ":" (list "name" "ea" "eb" "def") 
@@ -74,6 +75,9 @@
                                     (push (reverse (dropf (reverse stk) l)) (v (reverse (takef (reverse stk) l)) "#List")))]
         [(equal? (car f) "(define)") (let ([x (pop stk)] [y (pop (ret-pop stk))] [z (pop (ret-pop (ret-pop stk)))])
                                        (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
+        [(equal? (car f) "(rule)") (let ([x (pop stk)] [y (pop (ret-pop stk))])
+                                     (append (ret-pop (ret-pop stk)) (v (list (v-val y) (v-val x)) "#Rule")))]
+        [(equal? (car f) "(mode)") (append (ret-pop stk) (v (list (v-val (pop stk)) '()) "#Mode"))]
         ;[(equal? (car f) ";") (list (v stk "#Set"))]
         [else 
   (let ([sub #;(list (pop (ret-pop stk)) (pop stk)) (drop stk (- (length stk) (length (second f))))])
