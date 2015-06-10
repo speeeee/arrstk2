@@ -16,6 +16,7 @@
                     (list "(define)" (list "#Expr" "#List" "#List" "#Sym") '()) (list "(lst)")
                     (list "(rule)") #| #Expr #List |# 
                     (list "(mode)") #| #Sym |#
+                    (list "(add-rule)")
                     #;(list ";")))
 
 ;(define macros* (list (m ":" (list "name" "ea" "eb" "def") 
@@ -76,8 +77,11 @@
         [(equal? (car f) "(define)") (let ([x (pop stk)] [y (pop (ret-pop stk))] [z (pop (ret-pop (ret-pop stk)))])
                                        (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
         [(equal? (car f) "(rule)") (let ([x (pop stk)] [y (pop (ret-pop stk))])
-                                     (append (ret-pop (ret-pop stk)) (v (list (v-val y) (v-val x)) "#Rule")))]
-        [(equal? (car f) "(mode)") (append (ret-pop stk) (v (list (v-val (pop stk)) '()) "#Mode"))]
+                                     (push (ret-pop (ret-pop stk)) (v (list (v-val y) (v-val x)) "#Rule")))]
+        [(equal? (car f) "(mode)") (push (ret-pop stk) (v (list (v-val (pop stk)) '()) "#Mode"))]
+        [(equal? (car f) "(add-rule)") (push (ret-pop (ret-pop stk)) 
+                                               (v (list (car (v-val (pop (ret-pop stk)))) (push (second (v-val (pop (ret-pop stk))))
+                                                                                                (pop stk))) "#Mode"))]
         ;[(equal? (car f) ";") (list (v stk "#Set"))]
         [else 
   (let ([sub #;(list (pop (ret-pop stk)) (pop stk)) (drop stk (- (length stk) (length (second f))))])
@@ -91,8 +95,9 @@
         [else (push stk s)]))
 
 (define (check-semi stk) (check-semi+ stk '()))
-(define (check-semi+ stk n)
-  (if (empty? stk) n (cond [(v=? (car stk) (v ";" "#Sym")) (check-semi+ (cdr stk) (push '() (v n "#Expr")))]
+(define (check-semi+ stk n) 
+  (if (empty? stk) n (cond [(v=? (car stk) (v "}" "#Sym")) (let ([l (λ (x) (not (equal? (v-val x) "{")))])
+                            (check-semi+ (cdr stk) (push (ret-pop (reverse (dropf (reverse n) l))) (v (reverse (takef (reverse n) l)) "#Expr"))))]
                            [else (check-semi+ (cdr stk) (push n (car stk)))])))
 
 (define (process stk n)
