@@ -16,6 +16,7 @@
                     (list "(define)" (list "#Expr" "#List" "#List" "#Sym") '()) (list "(lst)")
                     (list "(rule)") #| #Expr #List |# 
                     (list "(mode)") #| #Sym |#
+                    (list "(swap)") (list "(drop)") (list "(dup)")
                     (list "(add-rule)")
                     #;(list ";")))
 
@@ -82,6 +83,9 @@
         [(equal? (car f) "(add-rule)") (push (ret-pop (ret-pop stk)) 
                                                (v (list (car (v-val (pop (ret-pop stk)))) (push (second (v-val (pop (ret-pop stk))))
                                                                                                 (pop stk))) "#Mode"))]
+        [(equal? (car f) "(dup)") (append (ret-pop stk) (list (pop stk) (pop stk)))]
+        [(equal? (car f) "(swap)") (append (ret-pop (ret-pop stk)) (list (pop stk) (pop (ret-pop stk))))]
+        [(equal? (car f) "(drop)") (ret-pop stk)]
         ;[(equal? (car f) ";") (list (v stk "#Set"))]
         [else 
   (let ([sub #;(list (pop (ret-pop stk)) (pop stk)) (drop stk (- (length stk) (length (second f))))])
