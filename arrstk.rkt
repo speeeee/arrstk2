@@ -1,8 +1,11 @@
 #lang racket/base
-(require racket/list)
+(require racket/list
+         racket/bool)
 
 ; successor to arrstk, this language will look like any other stack language
 ; for a little bit.
+
+; hi (mode) { 1 2 + } { #Int - #Int } (rule) (add-rule) { 1 - 2 } (mode-expr)
 
 (struct v (val type))
 (struct fn (name ins))
@@ -15,7 +18,7 @@
 
 (define funs* (list (list "+" (list "#Int" "#Int") (list "#Int"))
                     (list "(define)" (list "#Expr" "#List" "#List" "#Sym") '()) (list "(lst)")
-                    (list "(rule)") #| #Expr #List |# 
+                    (list "(rule)") #| #Expr #Expr |# 
                     (list "(mode)") #| #Sym |#
                     (list "(swap)") (list "(drop)") (list "(dup)") (list "(type)") (list "(exec)")
                     (list "(add-rule)") (list "(mode-expr)") (list "(push-mode)")
@@ -32,6 +35,15 @@
 
 ;(define modes* (mode "MODE:" (list "name")
 ;                     (rule (list "#Rule" 
+
+(define (rule-check e r)
+  (let ([c (map v-val (second (v-val r)))] [d (map (λ (x) (if (equal? (v-type x) "#Sym") (v-val x) (v-type x))) (v-val e))])
+    (if (equal? c d) (v (first (v-val r)) "#Expr") #f)))
+
+(define (rule-match e mode)
+  (let* ([rs (rules mode)] [ch (map (λ (x) (rule-check e x)) rs)]
+         [f (filter (λ (x) (not (false? x))) ch)])
+    (if (empty? f) e (car f))))
 
 (define (write-spec ls) 
   (if (list? ls) (begin (display "(") (map write-spec ls) (display ")"))
@@ -89,8 +101,8 @@
         [(equal? (car f) "(swap)") (append (ret-pop (ret-pop stk)) (list (pop stk) (pop (ret-pop stk))))]
         [(equal? (car f) "(drop)") (ret-pop stk)]
         [(equal? (car f) "(type)") (push (ret-pop (ret-pop stk)) (v (pop (ret-pop stk)) (v-val (pop stk))))]
-        #;[(equal? (car f) "(mode-expr)") 
-         ()]
+        [(equal? (car f) "(mode-expr)") 
+         (append (ret-pop (ret-pop stk)) (process (v-val (rule-match (pop stk) (pop (ret-pop stk)))) '()))]
         [(equal? (car f) "(exec)") (append (ret-pop stk) (process (check-semi (v-val (pop stk))) '()))]
         [(equal? (car f) "(push-mode)") (set! modes* (push modes* (pop stk)))]
         ;[(equal? (car f) ";") (list (v stk "#Set"))]
