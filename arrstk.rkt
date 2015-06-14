@@ -7,6 +7,7 @@
 (struct v (val type))
 (struct fn (name ins))
 (struct rule (in out))
+(define (rules m) (second (v-val m)))
 (define (v=? va vb) (and (equal? (v-val va) (v-val vb)) (equal? (v-type va) (v-type vb))))
 (define (push stk elt) (append stk (list elt)))
 (define (pop stk) (car (reverse stk)))
@@ -16,9 +17,10 @@
                     (list "(define)" (list "#Expr" "#List" "#List" "#Sym") '()) (list "(lst)")
                     (list "(rule)") #| #Expr #List |# 
                     (list "(mode)") #| #Sym |#
-                    (list "(swap)") (list "(drop)") (list "(dup)")
-                    (list "(add-rule)")
+                    (list "(swap)") (list "(drop)") (list "(dup)") (list "(type)") (list "(exec)")
+                    (list "(add-rule)") (list "(mode-expr)") (list "(push-mode)")
                     #;(list ";")))
+(define modes* '())
 
 ;(define macros* (list (m ":" (list "name" "ea" "eb" "def") 
 ;                         (fn "define" (list (v "name" "#Sym") (v "ea" "#List") (v "eb" "#List") (v "def" "#Expr")) "#Void"))))
@@ -86,6 +88,11 @@
         [(equal? (car f) "(dup)") (append (ret-pop stk) (list (pop stk) (pop stk)))]
         [(equal? (car f) "(swap)") (append (ret-pop (ret-pop stk)) (list (pop stk) (pop (ret-pop stk))))]
         [(equal? (car f) "(drop)") (ret-pop stk)]
+        [(equal? (car f) "(type)") (push (ret-pop (ret-pop stk)) (v (pop (ret-pop stk)) (v-val (pop stk))))]
+        #;[(equal? (car f) "(mode-expr)") 
+         ()]
+        [(equal? (car f) "(exec)") (append (ret-pop stk) (process (check-semi (v-val (pop stk))) '()))]
+        [(equal? (car f) "(push-mode)") (set! modes* (push modes* (pop stk)))]
         ;[(equal? (car f) ";") (list (v stk "#Set"))]
         [else 
   (let ([sub #;(list (pop (ret-pop stk)) (pop stk)) (drop stk (- (length stk) (length (second f))))])
