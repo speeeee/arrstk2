@@ -6,11 +6,13 @@
 ; for a little bit.
 
 ; hi (mode) { 1 2 + } { #Int - #Int } (rule) (add-rule) { 1 - 2 } (mode-expr)
+; mode: name end rules
 
 (struct v (val type))
 (struct fn (name ins))
 (struct rule (in out))
 (define (rules m) (second (v-val m)))
+(define (end m) (third (v-val m)))
 (define (v=? va vb) (and (equal? (v-val va) (v-val vb)) (equal? (v-type va) (v-type vb))))
 (define (push stk elt) (append stk (list elt)))
 (define (pop stk) (car (reverse stk)))
@@ -24,6 +26,7 @@
                     (list "(add-rule)") (list "(mode-expr)") (list "(push-mode)")
                     #;(list ";")))
 (define modes* '())
+(define cmode* '())
 
 ;(define macros* (list (m ":" (list "name" "ea" "eb" "def") 
 ;                         (fn "define" (list (v "name" "#Sym") (v "ea" "#List") (v "eb" "#List") (v "def" "#Expr")) "#Void"))))
@@ -36,9 +39,14 @@
 ;(define modes* (mode "MODE:" (list "name")
 ;                     (rule (list "#Rule" 
 
+(define (find-vals ev ri)
+  (filter (λ (x) (not (empty? x))) (map (λ (x y) (if (equal? (v-type y) "#Type") x '())) ev ri)))
+  ;(map (λ (x) (format "a~a" x)) (range (length (filter (λ (x) (equal? (type x) "#Type")) ri)))))
+
 (define (rule-check e r)
   (let ([c (map v-val (second (v-val r)))] [d (map (λ (x) (if (equal? (v-type x) "#Sym") (v-val x) (v-type x))) (v-val e))])
-    (if (equal? c d) (v (first (v-val r)) "#Expr") #f)))
+    (if (equal? c d) (v (append (find-vals (v-val e) (second (v-val r))) (first (v-val r))) "#Expr") #f))) ; c = change r
+                                                         ; d = change e
 
 (define (rule-match e mode)
   (let* ([rs (rules mode)] [ch (map (λ (x) (rule-check e x)) rs)]
@@ -93,7 +101,7 @@
                                        (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
         [(equal? (car f) "(rule)") (let ([x (pop stk)] [y (pop (ret-pop stk))])
                                      (push (ret-pop (ret-pop stk)) (v (list (v-val y) (v-val x)) "#Rule")))]
-        [(equal? (car f) "(mode)") (push (ret-pop stk) (v (list (v-val (pop stk)) '()) "#Mode"))]
+        [(equal? (car f) "(mode)") (push (ret-pop (ret-pop stk)) (v (list (v-val (pop stk)) '() (v-val (pop (ret-pop stk)))) "#Mode"))]
         [(equal? (car f) "(add-rule)") (push (ret-pop (ret-pop stk)) 
                                                (v (list (car (v-val (pop (ret-pop stk)))) (push (second (v-val (pop (ret-pop stk))))
                                                                                                 (pop stk))) "#Mode"))]
@@ -102,7 +110,7 @@
         [(equal? (car f) "(drop)") (ret-pop stk)]
         [(equal? (car f) "(type)") (push (ret-pop (ret-pop stk)) (v (pop (ret-pop stk)) (v-val (pop stk))))]
         [(equal? (car f) "(mode-expr)") 
-         (append (ret-pop (ret-pop stk)) (process (v-val (rule-match (pop stk) (pop (ret-pop stk)))) '()))]
+         (append (ret-pop stk) (process (v-val (rule-match (pop stk) (pop (ret-pop stk)))) '()))]
         [(equal? (car f) "(exec)") (append (ret-pop stk) (process (check-semi (v-val (pop stk))) '()))]
         [(equal? (car f) "(push-mode)") (set! modes* (push modes* (pop stk)))]
         ;[(equal? (car f) ";") (list (v stk "#Set"))]
