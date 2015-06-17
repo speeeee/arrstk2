@@ -5,7 +5,7 @@
 ; successor to arrstk, this language will look like any other stack language
 ; for a little bit.
 
-; hi (mode) { 1 2 + } { #Int - #Int } (rule) (add-rule) { 1 - 2 } (mode-expr)
+; hi ; (mode) { + } { #Int - #Int } (rule) (add-rule) { 1 - 2 } (mode-expr)
 ; mode: name end rules
 
 (struct v (val type))
