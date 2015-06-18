@@ -101,10 +101,10 @@
                                        (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
         [(equal? (car f) "(rule)") (let ([x (pop stk)] [y (pop (ret-pop stk))])
                                      (push (ret-pop (ret-pop stk)) (v (list (v-val y) (v-val x)) "#Rule")))]
-        [(equal? (car f) "(mode)") (push (ret-pop (ret-pop stk)) (v (list (v-val (pop stk)) '() (v-val (pop (ret-pop stk)))) "#Mode"))]
+        [(equal? (car f) "(mode)") (push (ret-pop (ret-pop stk)) (v (list (v-val (pop (ret-pop stk))) '() (v-val (pop stk))) "#Mode"))]
         [(equal? (car f) "(add-rule)") (push (ret-pop (ret-pop stk)) 
                                                (v (list (car (v-val (pop (ret-pop stk)))) (push (second (v-val (pop (ret-pop stk))))
-                                                                                                (pop stk))) "#Mode"))]
+                                                                                                (pop stk)) (third (v-val (pop (ret-pop stk))))) "#Mode"))]
         [(equal? (car f) "(dup)") (append (ret-pop stk) (list (pop stk) (pop stk)))]
         [(equal? (car f) "(swap)") (append (ret-pop (ret-pop stk)) (list (pop stk) (pop (ret-pop stk))))]
         [(equal? (car f) "(drop)") (ret-pop stk)]
@@ -120,9 +120,14 @@
         (begin ; (do the C stuff)
                (append (take stk (- (length stk) (length sub))) (map (λ (x) (v (fn (car f) sub) x)) (third f))))))]))
 
+(define (call-mode m stk)
+  (append (ret-pop stk) (process (v-val (rule-match (pop stk) m)) '())))
+
 (define (push~ stk s)
   (cond [(equal? (v-type s) "#Sym") (if (fexists? (v-val s) funs*) (call-fun (get-f (v-val s) funs*) stk)
-                                        (push stk s))]
+                                        (if (member (v-val s) (map (λ (x) (car (v-val x))) modes*)) 
+                                            (call-mode (findf (λ (x) (equal? (v-val s) (car (v-val x)))) modes*) stk) 
+                                            (push stk s)))]
         [else (push stk s)]))
 
 (define (check-semi stk) (check-semi+ stk '()))
