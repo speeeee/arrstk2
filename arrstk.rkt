@@ -13,7 +13,12 @@
 (struct rule (in out))
 (define (rules m) (second (v-val m)))
 (define (end m) (third (v-val m)))
-(define (v=? va vb) (and (equal? (v-val va) (v-val vb)) (equal? (v-type va) (v-type vb))))
+(define (v=? va vb) (and (=!? (v-val va) (v-val vb)) (equal? (v-type va) (v-type vb))))
+(define (=!? a b) ; general purpose 'equals?' meant for the structs.
+  (cond [(and (v? a) (v? b)) (v=? a b)]
+        [(and (fn? a) (fn? b)) (and (equal? (fn-name a) (fn-name b)) (=!? (fn-ins a) (fn-ins b)))]
+        [(and (list? a) (list? b)) (andmap (λ (x y) (=!? x y)) a b)]
+        [else (equal? a b)]))
 (define (push stk elt) (append stk (list elt)))
 (define (pop stk) (car (reverse stk)))
 (define (ret-pop stk) (reverse (cdr (reverse stk))))
@@ -120,8 +125,16 @@
         (begin ; (do the C stuff)
                (append (take stk (- (length stk) (length sub))) (map (λ (x) (v (fn (car f) sub) x)) (third f))))))]))
 
-(define (call-mode m stk)
+#;(define (call-mode m stk)
   (append (ret-pop stk) (process (v-val (rule-match (pop stk) m)) '())))
+(define (call-mode m stk) (append (ret-pop stk) (call-mode-2 (v (list (car (v-val m)) (list (car (rules m))) (third (v-val m))) "#Mode")
+                                                             (v-val (pop stk)) '())))
+(define (call-mode-2 nm stk n) ; left-to-right
+  (let* ([r (car (rules nm))] [l (length (second (v-val r)))])
+    (cond [(empty? stk) n]
+          [(< (length stk) l) (append n stk)]
+          [(=!? (take stk l) (v-val (rule-match (v (take stk l) "#Expr") nm))) (call-mode-2 nm (cdr stk) (push n (car stk)))]
+          [else (call-mode-2 nm (append (process (v-val (rule-match (v (take stk l) "#Expr") nm)) '()) (drop stk l)) n)]))) 
 
 (define (push~ stk s)
   (cond [(equal? (v-type s) "#Sym") (if (fexists? (v-val s) funs*) (call-fun (get-f (v-val s) funs*) stk)
