@@ -127,14 +127,17 @@
 
 #;(define (call-mode m stk)
   (append (ret-pop stk) (process (v-val (rule-match (pop stk) m)) '())))
-(define (call-mode m stk) (append (ret-pop stk) (call-mode-2 (v (list (car (v-val m)) (list (car (rules m))) (third (v-val m))) "#Mode")
+(define (call-mode m stk) (append (ret-pop stk) (call-mode-2 m #;(v (list (car (v-val m)) (list (car (rules m))) (third (v-val m))) "#Mode")
                                                              (v-val (pop stk)) '())))
 (define (call-mode-2 nm stk n) ; left-to-right
-  (let* ([r (car (rules nm))] [l (length (second (v-val r)))])
-    (cond [(empty? stk) n]
-          [(< (length stk) l) (append n stk)]
-          [(=!? (take stk l) (v-val (rule-match (v (take stk l) "#Expr") nm))) (call-mode-2 nm (cdr stk) (push n (car stk)))]
-          [else (call-mode-2 nm (append (process (v-val (rule-match (v (take stk l) "#Expr") nm)) '()) (drop stk l)) n)]))) 
+  (if (empty? (rules nm)) stk
+  (let* ([r (car (rules nm))] [l (length (second (v-val r)))]
+         [msub (v (list (car (v-val nm)) (list r) (third (v-val nm))) "#Mode")])
+    (cond [(empty? stk) (call-mode-2 (v (list (car (v-val nm)) (cdr (rules nm)) (third (v-val nm))) "#Mode") n '())]
+          [(< (length stk) l) (call-mode-2 (v (list (car (v-val nm)) (cdr (rules nm)) (third (v-val nm))) "#Mode")
+                                           (append n stk) '())]
+          [(=!? (take stk l) (v-val (rule-match (v (take stk l) "#Expr") msub))) (call-mode-2 nm (cdr stk) (push n (car stk)))]
+          [else (call-mode-2 msub (append (process (v-val (rule-match (v (take stk l) "#Expr") nm)) '()) (drop stk l)) n)]))))
 
 (define (push~ stk s)
   (cond [(equal? (v-type s) "#Sym") (if (fexists? (v-val s) funs*) (call-fun (get-f (v-val s) funs*) stk)
