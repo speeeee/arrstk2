@@ -5,8 +5,9 @@
 ; successor to arrstk, this language will look like any other stack language
 ; for a little bit.
 
-; hi ; (mode) { + } { #Int - #Int } (rule) (add-rule) { 1 - 2 } (mode-expr)
-; mode: name end rules
+; hi (mode) { add } { #Int + #Int } (rule) (add-rule) (push-mode)
+; { 1 + 2 + 3 } hi
+; mode: name rules
 
 (struct v (val type))
 (struct fn (name ins))
@@ -23,7 +24,7 @@
 (define (pop stk) (car (reverse stk)))
 (define (ret-pop stk) (reverse (cdr (reverse stk))))
 
-(define funs* (list (list "+" (list "#Int" "#Int") (list "#Int"))
+(define funs* (list (list "add" (list "#Int" "#Int") (list "#Int"))
                     (list "(define)" (list "#Expr" "#List" "#List" "#Sym") '()) (list "(lst)")
                     (list "(rule)") #| #Expr #Expr |# 
                     (list "(mode)") #| #Sym |#
@@ -106,10 +107,10 @@
                                        (set! funs* (push funs* (list (v-val x) (map v-val (v-val z)) (map v-val (v-val y))))))]
         [(equal? (car f) "(rule)") (let ([x (pop stk)] [y (pop (ret-pop stk))])
                                      (push (ret-pop (ret-pop stk)) (v (list (v-val y) (v-val x)) "#Rule")))]
-        [(equal? (car f) "(mode)") (push (ret-pop (ret-pop stk)) (v (list (v-val (pop (ret-pop stk))) '() (v-val (pop stk))) "#Mode"))]
+        [(equal? (car f) "(mode)") (push (ret-pop stk) (v (list (v-val (pop stk)) '() #;(v-val (pop stk))) "#Mode"))]
         [(equal? (car f) "(add-rule)") (push (ret-pop (ret-pop stk)) 
                                                (v (list (car (v-val (pop (ret-pop stk)))) (push (second (v-val (pop (ret-pop stk))))
-                                                                                                (pop stk)) (third (v-val (pop (ret-pop stk))))) "#Mode"))]
+                                                                                                (pop stk)) #;(third (v-val (pop (ret-pop stk))))) "#Mode"))]
         [(equal? (car f) "(dup)") (append (ret-pop stk) (list (pop stk) (pop stk)))]
         [(equal? (car f) "(swap)") (append (ret-pop (ret-pop stk)) (list (pop stk) (pop (ret-pop stk))))]
         [(equal? (car f) "(drop)") (ret-pop stk)]
@@ -132,9 +133,9 @@
 (define (call-mode-2 nm stk n) ; left-to-right
   (if (empty? (rules nm)) stk
   (let* ([r (car (rules nm))] [l (length (second (v-val r)))]
-         [msub (v (list (car (v-val nm)) (list r) (third (v-val nm))) "#Mode")])
+         [msub (v (list (car (v-val nm)) (list r) #;(third (v-val nm))) "#Mode")])
     (cond [(empty? stk) (call-mode-2 (v (list (car (v-val nm)) (cdr (rules nm)) (third (v-val nm))) "#Mode") n '())]
-          [(< (length stk) l) (call-mode-2 (v (list (car (v-val nm)) (cdr (rules nm)) (third (v-val nm))) "#Mode")
+          [(< (length stk) l) (call-mode-2 (v (list (car (v-val nm)) (cdr (rules nm)) #;(third (v-val nm))) "#Mode")
                                            (append n stk) '())]
           [(=!? (take stk l) (v-val (rule-match (v (take stk l) "#Expr") msub))) (call-mode-2 nm (cdr stk) (push n (car stk)))]
           [else (call-mode-2 msub (append (process (v-val (rule-match (v (take stk l) "#Expr") nm)) '()) (drop stk l)) n)]))))
@@ -158,7 +159,6 @@
 (define (main)
   (let ([e (process (check-semi (map lex (string-split-spec (read-line)))) '())])
     (write-spec e) (out-c e (current-output-port))
-    (displayln funs*)
     (main)))
 
 (main)
