@@ -3,7 +3,7 @@ Documentation
 
 # The basics
 
-Fundamentally, <unnamed> is a stack-based language.  What this means is that all actions performed in the language are based off of a stack.  A stack is a structure with properties that may seem restrictive at first.  There are two fundamental actions you can perform with a stack, *push* and *pop*.  When something is pushed to the stack, it is essentially placed on the top of the stack.  Pop takes the item from the top of the stack.  
+Fundamentally, (unnamed) is a stack-based language.  What this means is that all actions performed in the language are based off of a stack.  A stack is a structure with properties that may seem restrictive at first.  There are two fundamental actions you can perform with a stack, *push* and *pop*.  When something is pushed to the stack, it is essentially placed on the top of the stack.  Pop takes the item from the top of the stack.  
 
 There is a third action that builds on pop.  This is how functions are processed in stack-based languages.  They have a number of input parameters and a number of output values.  When a function (or 'word') is pushed to the stack, it pops from the stack the amount of input parameters there are.  It then returns its output by pushing the output to the stack.
 
@@ -19,7 +19,7 @@ Here, `1` and then `2` are pushed to the stack.  Then, `+` is pushed.  `+` takes
 3
 ```
 
-These are the fundamentals of stack-based languages, which is the base of <unnamed>.
+These are the fundamentals of stack-based languages, which is the base of (unnamed).
 
 There is another structure that is somewhat irregular compared to the stack format, and that is the syntax for making an *expression*.  An expression is simply a list of uncalled actions that can be called from within the stack.  Expressions mostly play a role in defining rules, which are discussed later.
 
